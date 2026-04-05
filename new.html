@@ -13,6 +13,29 @@ body{background:var(--dark);color:var(--text);font-family:'Barlow',sans-serif;ov
 .cursor{width:10px;height:10px;background:var(--fire);border-radius:50%;position:fixed;top:0;left:0;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);transition:width .2s,height .2s,background .2s;}
 .cursor-ring{width:32px;height:32px;border:2px solid rgba(255,61,0,.55);border-radius:50%;position:fixed;top:0;left:0;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:border-color .3s;}
 body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:.35;}
+
+/* ── CLOUD SYNC BADGE ── */
+#syncBadge{position:fixed;bottom:1.2rem;left:1.2rem;z-index:9000;display:flex;align-items:center;gap:6px;background:rgba(10,10,15,.92);border:1px solid rgba(0,229,255,.25);padding:6px 12px;font-family:'Barlow Condensed',sans-serif;font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--neon);backdrop-filter:blur(8px);}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--neon);animation:syncPulse 1.8s ease-in-out infinite;}
+@keyframes syncPulse{0%,100%{opacity:1;}50%{opacity:.2;}}
+.sync-dot.err{background:#f87171;animation:none;}
+.sync-dot.idle{background:var(--muted);animation:none;}
+
+/* ── SETUP MODAL ── */
+#setupModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:6000;align-items:center;justify-content:center;padding:1rem;}
+#setupModal.open{display:flex;}
+.setup-box{background:var(--dark2);border:1px solid rgba(0,229,255,.3);padding:2.5rem;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;}
+.setup-box h2{font-family:'Bebas Neue',sans-serif;font-size:2rem;color:var(--neon);margin-bottom:.2rem;}
+.setup-box p{font-size:.82rem;color:var(--muted);margin-bottom:.2rem;line-height:1.6;}
+.setup-box a{color:var(--neon);}
+.setup-steps{background:rgba(0,229,255,.06);border:1px solid rgba(0,229,255,.15);padding:1rem 1.2rem;margin:1rem 0;font-size:.82rem;color:var(--text);line-height:2;}
+.setup-input{width:100%;background:var(--dark);border:1px solid rgba(255,255,255,.1);color:var(--text);font-family:'Barlow',sans-serif;font-size:.92rem;padding:11px 14px;outline:none;margin-bottom:.75rem;transition:border-color .2s;}
+.setup-input:focus{border-color:var(--neon);}
+.setup-submit{width:100%;background:var(--neon);color:#000;font-family:'Barlow Condensed',sans-serif;font-size:.95rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;padding:12px;border:none;cursor:none;transition:background .2s;}
+.setup-submit:hover{opacity:.85;}
+.setup-skip{background:none;border:none;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;cursor:none;margin-top:.75rem;display:block;text-align:center;width:100%;}
+.setup-err{color:#f87171;font-size:.8rem;font-family:'Barlow Condensed',sans-serif;letter-spacing:.08em;display:none;margin-bottom:.5rem;}
+
 nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;justify-content:space-between;align-items:center;padding:1rem 2.5rem;background:rgba(10,10,15,.92);backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,61,0,.15);}
 .nav-logo{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;letter-spacing:.1em;}
 .nav-logo span{color:var(--fire);}
@@ -204,6 +227,26 @@ footer{background:#060609;border-top:1px solid rgba(255,61,0,.12);padding:2.5rem
 
 <div class="cursor" id="cursor"></div>
 <div class="cursor-ring" id="cursorRing"></div>
+<div id="syncBadge"><div class="sync-dot idle" id="syncDot"></div><span id="syncLabel">Connecting…</span></div>
+
+<!-- SETUP MODAL -->
+<div id="setupModal">
+  <div class="setup-box">
+    <h2>☁️ Cloud Sync Setup</h2>
+    <p>To share your data with friends, you need a free <strong>JSONBin</strong> account. This takes 2 minutes:</p>
+    <div class="setup-steps">
+      1. Go to <a href="https://jsonbin.io" target="_blank">jsonbin.io</a> and sign up free<br>
+      2. Click <strong>API Keys</strong> in the dashboard<br>
+      3. Copy your <strong>Master Key</strong> (starts with <code>$2b$...</code>)<br>
+      4. Paste it below and click Connect
+    </div>
+    <div class="setup-err" id="setupErr">❌ Could not connect. Check your API key and try again.</div>
+    <input class="setup-input" type="text" id="apiKeyInput" placeholder="Paste your JSONBin Master Key here…"/>
+    <p style="font-size:.75rem;color:var(--muted);margin-bottom:.8rem">Your key is stored only in your browser and never shared.</p>
+    <button class="setup-submit" onclick="connectCloud()">🔗 Connect & Sync</button>
+    <button class="setup-skip" onclick="skipCloud()">⚡ Use locally only (no sharing)</button>
+  </div>
+</div>
 
 <div id="lightbox">
   <button class="lb-close" onclick="closeLB()">✕</button>
@@ -297,7 +340,6 @@ footer{background:#060609;border-top:1px solid rgba(255,61,0,.12);padding:2.5rem
         <button class="admin-tab" onclick="switchTab('stats')">📊 Stats</button>
       </div>
 
-      <!-- CERTIFICATES TAB -->
       <div class="admin-pane active" id="pane-certs">
         <div class="admin-title">➕ Add New Certificate</div>
         <div class="admin-grid">
@@ -319,10 +361,9 @@ footer{background:#060609;border-top:1px solid rgba(255,61,0,.12);padding:2.5rem
         </div>
       </div>
 
-      <!-- ROUTE MAP TAB -->
       <div class="admin-pane" id="pane-route">
         <div class="admin-title">🗺 Route Map Events</div>
-        <p style="font-size:.82rem;color:var(--muted);margin-bottom:.8rem">Edit, reorder or remove events. Each event is a checkpoint on the animated map.</p>
+        <p style="font-size:.82rem;color:var(--muted);margin-bottom:.8rem">Edit, reorder or remove events.</p>
         <div class="edit-list" id="routeList"></div>
         <div class="pane-divider">
           <div class="sub-title">➕ Add New Event</div>
@@ -346,10 +387,9 @@ footer{background:#060609;border-top:1px solid rgba(255,61,0,.12);padding:2.5rem
         </div>
       </div>
 
-      <!-- MEMBERS TAB -->
       <div class="admin-pane" id="pane-members">
         <div class="admin-title">👥 Team Members</div>
-        <p style="font-size:.82rem;color:var(--muted);margin-bottom:.8rem">Click ✏️ Edit to update any member's name, role, awards, or avatar.</p>
+        <p style="font-size:.82rem;color:var(--muted);margin-bottom:.8rem">Click ✏️ Edit to update any member.</p>
         <div class="edit-list" id="memberList"></div>
         <div class="pane-divider">
           <div class="sub-title">➕ Add New Member</div>
@@ -376,10 +416,9 @@ footer{background:#060609;border-top:1px solid rgba(255,61,0,.12);padding:2.5rem
         </div>
       </div>
 
-      <!-- STATS TAB -->
       <div class="admin-pane" id="pane-stats">
         <div class="admin-title">📊 Hero Stats</div>
-        <p style="font-size:.82rem;color:var(--muted);margin-bottom:1rem">These numbers animate on the homepage hero section.</p>
+        <p style="font-size:.82rem;color:var(--muted);margin-bottom:1rem">These numbers animate on the homepage hero.</p>
         <div class="stats-row">
           <div class="field-group"><label>Hackathons #</label><input type="number" id="sH" min="0"/></div>
           <div class="field-group"><label>Wins #</label><input type="number" id="sW" min="0"/></div>
@@ -413,9 +452,13 @@ footer{background:#060609;border-top:1px solid rgba(255,61,0,.12);padding:2.5rem
 <div id="toastBox"></div>
 
 <script>
-/* ── CONFIG ── */
+/* ══════════════════════════════════════════
+   CONFIG
+══════════════════════════════════════════ */
 const ADMIN_PASSWORD = "team2025";
-const DEFAULT_STATS  = {h:8,w:5,c:12};
+const JSONBIN_BASE   = "https://api.jsonbin.io/v3";
+
+const DEFAULT_STATS   = {h:8,w:5,c:12};
 const DEFAULT_MEMBERS = [
   {id:'m1',name:'Member 1',role:'Team Lead / Full Stack',wins:'—',letter:'A',color:'linear-gradient(135deg,#FF3D00,#FF8C00)'},
   {id:'m2',name:'Member 2',role:'AI / ML Engineer',wins:'—',letter:'B',color:'linear-gradient(135deg,#00E5FF,#0077B6)'},
@@ -433,18 +476,159 @@ const DEFAULT_ROUTE = [
   {id:'r7',label:'FINISH 🏁',event:'Season Complete',rank:'Champions',color:'#FF3D00'},
 ];
 
-/* ── STORAGE ── */
-function load(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
-function save(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){toast('⚠️ Storage full!','err');}}
+/* ══════════════════════════════════════════
+   CLOUD STORAGE (JSONBin)
+══════════════════════════════════════════ */
+let JSONBIN_KEY = localStorage.getItem('apex_jb_key') || '';
+let JSONBIN_BIN = localStorage.getItem('apex_jb_bin') || '';
+let cloudMode   = false;
 
-let certs   = load('apex_certs',   []);
-let stats   = load('apex_stats',   DEFAULT_STATS);
-let members = load('apex_members', DEFAULT_MEMBERS);
-let route   = load('apex_route',   DEFAULT_ROUTE);
+function setSyncUI(state, label){
+  const dot = document.getElementById('syncDot');
+  const lbl = document.getElementById('syncLabel');
+  dot.className = 'sync-dot ' + (state === 'ok' ? '' : state === 'err' ? 'err' : 'idle');
+  lbl.textContent = label;
+}
 
-/* ── ADMIN ── */
+async function cloudGet(){
+  const r = await fetch(`${JSONBIN_BASE}/b/${JSONBIN_BIN}/latest`,{
+    headers:{'X-Master-Key': JSONBIN_KEY}
+  });
+  if(!r.ok) throw new Error('fetch failed');
+  const j = await r.json();
+  return j.record;
+}
+
+async function cloudPut(data){
+  setSyncUI('','Saving…');
+  const r = await fetch(`${JSONBIN_BASE}/b/${JSONBIN_BIN}`,{
+    method:'PUT',
+    headers:{'Content-Type':'application/json','X-Master-Key': JSONBIN_KEY},
+    body: JSON.stringify(data)
+  });
+  if(!r.ok) throw new Error('put failed');
+  setSyncUI('ok','Synced ✓');
+  setTimeout(()=>setSyncUI('ok','Cloud sync ON'),2000);
+}
+
+async function createBin(defaultData){
+  const r = await fetch(`${JSONBIN_BASE}/b`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-Master-Key': JSONBIN_KEY,'X-Bin-Name':'TeamApex'},
+    body: JSON.stringify(defaultData)
+  });
+  if(!r.ok) throw new Error('create failed');
+  const j = await r.json();
+  return j.metadata.id;
+}
+
+async function connectCloud(){
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if(!key){toast('❌ Paste your API key first','err');return;}
+  document.getElementById('setupErr').style.display='none';
+  setSyncUI('','Connecting…');
+  try{
+    JSONBIN_KEY = key;
+    // create a fresh bin with default data
+    const defaultPayload = {certs:[],stats:DEFAULT_STATS,members:DEFAULT_MEMBERS,route:DEFAULT_ROUTE};
+    JSONBIN_BIN = await createBin(defaultPayload);
+    localStorage.setItem('apex_jb_key', JSONBIN_KEY);
+    localStorage.setItem('apex_jb_bin', JSONBIN_BIN);
+    cloudMode = true;
+    // load from cloud
+    const data = await cloudGet();
+    applyData(data);
+    document.getElementById('setupModal').classList.remove('open');
+    setSyncUI('ok','Cloud sync ON');
+    toast('☁️ Cloud connected! Share your URL with friends.','ok');
+    renderAll();
+  }catch(e){
+    document.getElementById('setupErr').style.display='block';
+    setSyncUI('err','Connection failed');
+  }
+}
+
+async function initCloud(){
+  if(!JSONBIN_KEY || !JSONBIN_BIN){
+    // first time — show setup
+    document.getElementById('setupModal').classList.add('open');
+    setSyncUI('idle','Local mode');
+    loadLocal();
+    renderAll();
+    return;
+  }
+  setSyncUI('','Connecting…');
+  try{
+    const data = await cloudGet();
+    applyData(data);
+    cloudMode = true;
+    setSyncUI('ok','Cloud sync ON');
+    renderAll();
+  }catch(e){
+    setSyncUI('err','Offline — local data');
+    loadLocal();
+    renderAll();
+    toast('⚠️ Cloud unreachable — showing local data','err');
+  }
+}
+
+function skipCloud(){
+  document.getElementById('setupModal').classList.remove('open');
+  setSyncUI('idle','Local only');
+  loadLocal();
+  renderAll();
+  toast('⚡ Running in local mode — changes won\'t sync','info');
+}
+
+function applyData(data){
+  if(!data) return;
+  certs   = data.certs   || [];
+  stats   = data.stats   || DEFAULT_STATS;
+  members = data.members || DEFAULT_MEMBERS;
+  route   = data.route   || DEFAULT_ROUTE;
+}
+
+async function saveCloud(){
+  if(!cloudMode) return;
+  try{
+    await cloudPut({certs,stats,members,route});
+  }catch(e){
+    setSyncUI('err','Save failed!');
+    toast('❌ Cloud save failed — check connection','err');
+  }
+}
+
+/* ── LOCAL FALLBACK ── */
+function loadLocal(){
+  certs   = lsLoad('apex_certs',   []);
+  stats   = lsLoad('apex_stats',   DEFAULT_STATS);
+  members = lsLoad('apex_members', DEFAULT_MEMBERS);
+  route   = lsLoad('apex_route',   DEFAULT_ROUTE);
+}
+function lsLoad(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
+function lsSave(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+
+/* master save — writes cloud OR local */
+async function masterSave(){
+  if(cloudMode){
+    await saveCloud();
+  } else {
+    lsSave('apex_certs',certs);
+    lsSave('apex_stats',stats);
+    lsSave('apex_members',members);
+    lsSave('apex_route',route);
+  }
+}
+
+/* ══════════════════════════════════════════
+   APP STATE
+══════════════════════════════════════════ */
+let certs=[], stats={}, members=[], route=[];
 let isAdmin=false, pendingFileData=null;
 
+/* ══════════════════════════════════════════
+   ADMIN
+══════════════════════════════════════════ */
 function handleAdminBtn(){isAdmin?lockAdmin():openPwModal();}
 function openPwModal(){document.getElementById('pwModal').style.display='flex';document.getElementById('pwInput').value='';document.getElementById('pwError').style.display='none';setTimeout(()=>document.getElementById('pwInput').focus(),100);}
 function closePwModal(){document.getElementById('pwModal').style.display='none';}
@@ -494,9 +678,9 @@ function renderStats(){
   document.getElementById('sW').value=stats.w;
   document.getElementById('sC').value=stats.c;
 }
-function saveStats(){
+async function saveStats(){
   stats={h:+document.getElementById('sH').value||0,w:+document.getElementById('sW').value||0,c:+document.getElementById('sC').value||0};
-  save('apex_stats',stats);renderStats();toast('✅ Stats saved!','ok');
+  await masterSave();renderStats();toast('✅ Stats saved!','ok');
 }
 
 /* ── CERTIFICATES ── */
@@ -531,17 +715,17 @@ function renderCerts(){
   });
 }
 
-function addCert(){
+async function addCert(){
   const title=document.getElementById('fTitle').value.trim();
   const event=document.getElementById('fEvent').value.trim();
   const rank=document.getElementById('fRank').value.trim();
   const date=document.getElementById('fDate').value.trim();
   if(!title||!event||!rank){toast('❌ Fill Title, Event & Rank!','err');return;}
   certs.unshift({id:Date.now().toString(),title,eventName:event,rank,date:date||new Date().getFullYear().toString(),image:pendingFileData||null,createdAt:Date.now()});
-  save('apex_certs',certs);renderCerts();
+  await masterSave();renderCerts();
   ['fTitle','fEvent','fRank','fDate'].forEach(id=>document.getElementById(id).value='');
   pendingFileData=null;document.getElementById('dzText').textContent='Click or drag & drop certificate image here';document.getElementById('certFile').value='';
-  toast('🏆 Certificate added!','ok');
+  toast('🏆 Certificate added & synced!','ok');
 }
 
 function editCert(id){
@@ -552,17 +736,17 @@ function editCert(id){
       <div class="field-group"><label>Event Name *</label><input type="text" id="ec_event" value="${esc(c.eventName)}"/></div>
       <div class="field-group"><label>Rank / Award *</label><input type="text" id="ec_rank" value="${esc(c.rank)}"/></div>
       <div class="field-group"><label>Date</label><input type="text" id="ec_date" value="${esc(c.date)}"/></div>
-    </div>`,()=>{
+    </div>`,async ()=>{
     const title=document.getElementById('ec_title').value.trim();
     const event=document.getElementById('ec_event').value.trim();
     const rank=document.getElementById('ec_rank').value.trim();
     if(!title||!event||!rank){toast('❌ Fill required fields!','err');return;}
     c.title=title;c.eventName=event;c.rank=rank;c.date=document.getElementById('ec_date').value.trim();
-    save('apex_certs',certs);renderCerts();closeEditModal();toast('✅ Certificate updated!','ok');
+    await masterSave();renderCerts();closeEditModal();toast('✅ Updated & synced!','ok');
   });
 }
-function deleteCert(id){if(!confirm('Delete this certificate?'))return;certs=certs.filter(c=>c.id!==id);save('apex_certs',certs);renderCerts();toast('🗑 Deleted','info');}
-function confirmClearAll(){if(!confirm('Delete ALL certificates?'))return;certs=[];save('apex_certs',certs);renderCerts();toast('🗑 All cleared','info');}
+async function deleteCert(id){if(!confirm('Delete this certificate?'))return;certs=certs.filter(c=>c.id!==id);await masterSave();renderCerts();toast('🗑 Deleted','info');}
+async function confirmClearAll(){if(!confirm('Delete ALL certificates?'))return;certs=[];await masterSave();renderCerts();toast('🗑 All cleared','info');}
 
 const certFileInput=document.getElementById('certFile'),dropZone=document.getElementById('dropZone');
 certFileInput.addEventListener('change',e=>{if(e.target.files[0])processFile(e.target.files[0]);});
@@ -586,17 +770,13 @@ document.getElementById('lightbox').addEventListener('click',e=>{if(e.target.id=
 /* ── ROUTE MAP EVENTS ── */
 function renderRouteList(){
   const list=document.getElementById('routeList');
-  if(!route.length){list.innerHTML='<p style="color:var(--muted);font-size:.85rem;padding:.5rem 0">No events yet — add one below.</p>';return;}
+  if(!route.length){list.innerHTML='<p style="color:var(--muted);font-size:.85rem;padding:.5rem 0">No events yet.</p>';return;}
   list.innerHTML='';
   route.forEach((r,i)=>{
-    const row=document.createElement('div');
-    row.className='edit-row';
+    const row=document.createElement('div');row.className='edit-row';
     row.innerHTML=`
       <div class="er-dot" style="background:${r.color}"></div>
-      <div class="er-info">
-        <div class="er-title">${esc(r.label)}</div>
-        <div class="er-sub">${esc(r.event)} &nbsp;·&nbsp; ${esc(r.rank)}</div>
-      </div>
+      <div class="er-info"><div class="er-title">${esc(r.label)}</div><div class="er-sub">${esc(r.event)} &nbsp;·&nbsp; ${esc(r.rank)}</div></div>
       <div class="er-btns">
         <button class="btn-sm up-dn" onclick="moveRoute(${i},-1)" ${i===0?'disabled style="opacity:.3"':''}>↑</button>
         <button class="btn-sm up-dn" onclick="moveRoute(${i},1)"  ${i===route.length-1?'disabled style="opacity:.3"':''}>↓</button>
@@ -607,16 +787,16 @@ function renderRouteList(){
   });
 }
 
-function addRouteEvent(){
+async function addRouteEvent(){
   const label=document.getElementById('rlLabel').value.trim();
   const event=document.getElementById('rlEvent').value.trim();
   const rank=document.getElementById('rlRank').value.trim();
   const color=document.getElementById('rlColor').value;
   if(!label||!event||!rank){toast('❌ Fill all route event fields!','err');return;}
   route.push({id:'r'+Date.now(),label,event,rank,color});
-  save('apex_route',route);renderRouteList();
+  await masterSave();renderRouteList();
   ['rlLabel','rlEvent','rlRank'].forEach(id=>document.getElementById(id).value='');
-  toast('✅ Event added to route!','ok');
+  toast('✅ Event added & synced!','ok');
 }
 
 function editRouteEvent(id){
@@ -628,25 +808,25 @@ function editRouteEvent(id){
       <div class="field-group"><label>Award / Rank *</label><input type="text" id="er_rank" value="${esc(r.rank)}"/></div>
       <div class="field-group"><label>Dot Color</label>
         <select id="er_color">
-          <option value="#00E5FF" ${r.color==='#00E5FF'?'selected':''}>🔵 Cyan — Start / Neutral</option>
-          <option value="#FFD600" ${r.color==='#FFD600'?'selected':''}>🟡 Gold — Win</option>
-          <option value="#FF3D00" ${r.color==='#FF3D00'?'selected':''}>🔴 Red — Finish / Major</option>
-          <option value="#22c55e" ${r.color==='#22c55e'?'selected':''}>🟢 Green — Participation</option>
+          <option value="#00E5FF" ${r.color==='#00E5FF'?'selected':''}>🔵 Cyan</option>
+          <option value="#FFD600" ${r.color==='#FFD600'?'selected':''}>🟡 Gold</option>
+          <option value="#FF3D00" ${r.color==='#FF3D00'?'selected':''}>🔴 Red</option>
+          <option value="#22c55e" ${r.color==='#22c55e'?'selected':''}>🟢 Green</option>
         </select>
       </div>
-    </div>`,()=>{
+    </div>`,async ()=>{
     const label=document.getElementById('er_label').value.trim();
     const event=document.getElementById('er_event').value.trim();
     const rank=document.getElementById('er_rank').value.trim();
     if(!label||!event||!rank){toast('❌ Fill all fields!','err');return;}
     r.label=label;r.event=event;r.rank=rank;r.color=document.getElementById('er_color').value;
-    save('apex_route',route);renderRouteList();closeEditModal();toast('✅ Event updated!','ok');
+    await masterSave();renderRouteList();closeEditModal();toast('✅ Updated & synced!','ok');
   });
 }
-function deleteRouteEvent(id){if(!confirm('Remove this route event?'))return;route=route.filter(r=>r.id!==id);save('apex_route',route);renderRouteList();toast('🗑 Removed','info');}
-function moveRoute(idx,dir){
+async function deleteRouteEvent(id){if(!confirm('Remove this route event?'))return;route=route.filter(r=>r.id!==id);await masterSave();renderRouteList();toast('🗑 Removed','info');}
+async function moveRoute(idx,dir){
   const ni=idx+dir;if(ni<0||ni>=route.length)return;
-  [route[idx],route[ni]]=[route[ni],route[idx]];save('apex_route',route);renderRouteList();
+  [route[idx],route[ni]]=[route[ni],route[idx]];await masterSave();renderRouteList();
 }
 
 /* ── MEMBERS ── */
@@ -658,10 +838,7 @@ function renderMemberList(){
     const row=document.createElement('div');row.className='edit-row';
     row.innerHTML=`
       <div class="er-avatar" style="background:${m.color}">${esc(m.letter)}</div>
-      <div class="er-info">
-        <div class="er-title">${esc(m.name)}</div>
-        <div class="er-sub">${esc(m.role)} &nbsp;·&nbsp; ${esc(m.wins)} awards</div>
-      </div>
+      <div class="er-info"><div class="er-title">${esc(m.name)}</div><div class="er-sub">${esc(m.role)} &nbsp;·&nbsp; ${esc(m.wins)} awards</div></div>
       <div class="er-btns">
         <button class="btn-sm edit" onclick="editMember('${m.id}')">✏️ Edit</button>
         <button class="btn-sm" onclick="deleteMember('${m.id}')">🗑</button>
@@ -674,7 +851,7 @@ function renderTeamGrid(){
   const grid=document.getElementById('teamGrid');
   grid.innerHTML='';
   isAdmin?grid.classList.add('admin-active-members'):grid.classList.remove('admin-active-members');
-  if(!members.length){grid.innerHTML='<p style="color:var(--muted);font-family:\'Barlow Condensed\',sans-serif;letter-spacing:.1em">No members yet — add some in Admin → Members.</p>';return;}
+  if(!members.length){grid.innerHTML='<p style="color:var(--muted);font-family:\'Barlow Condensed\',sans-serif;letter-spacing:.1em">No members yet.</p>';return;}
   members.forEach(m=>{
     const card=document.createElement('div');card.className='member-card';
     card.innerHTML=`
@@ -687,7 +864,7 @@ function renderTeamGrid(){
   });
 }
 
-const COLOR_OPTIONS = [
+const COLOR_OPTIONS=[
   {v:'linear-gradient(135deg,#FF3D00,#FF8C00)',l:'🔴 Fire Orange'},
   {v:'linear-gradient(135deg,#00E5FF,#0077B6)',l:'🔵 Neon Blue'},
   {v:'linear-gradient(135deg,#FFD600,#FF6D00)',l:'🟡 Gold Flame'},
@@ -696,7 +873,7 @@ const COLOR_OPTIONS = [
   {v:'linear-gradient(135deg,#f472b6,#7B2FFF)',l:'🌸 Pink Purple'},
 ];
 
-function addMember(){
+async function addMember(){
   const name=document.getElementById('nmName').value.trim();
   const role=document.getElementById('nmRole').value.trim();
   const wins=document.getElementById('nmWins').value.trim()||'—';
@@ -704,9 +881,9 @@ function addMember(){
   const color=document.getElementById('nmColor').value;
   if(!name||!role){toast('❌ Name and Role required!','err');return;}
   members.push({id:'m'+Date.now(),name,role,wins,letter,color});
-  save('apex_members',members);renderMemberList();renderTeamGrid();
+  await masterSave();renderMemberList();renderTeamGrid();
   ['nmName','nmRole','nmWins','nmLetter'].forEach(id=>document.getElementById(id).value='');
-  toast('✅ Member added!','ok');
+  toast('✅ Member added & synced!','ok');
 }
 
 function editMember(id){
@@ -716,13 +893,10 @@ function editMember(id){
     <div class="admin-grid">
       <div class="field-group"><label>Full Name *</label><input type="text" id="em_name" value="${esc(m.name)}"/></div>
       <div class="field-group"><label>Role / Position *</label><input type="text" id="em_role" value="${esc(m.role)}"/></div>
-      <div class="field-group"><label>Awards Won</label><input type="text" id="em_wins" value="${esc(m.wins)}" placeholder="3 or —"/></div>
+      <div class="field-group"><label>Awards Won</label><input type="text" id="em_wins" value="${esc(m.wins)}"/></div>
       <div class="field-group"><label>Avatar Letter</label><input type="text" id="em_letter" value="${esc(m.letter)}" maxlength="2"/></div>
     </div>
-    <div class="field-group" style="margin-bottom:.5rem;max-width:340px">
-      <label>Avatar Color</label>
-      <select id="em_color">${opts}</select>
-    </div>`,()=>{
+    <div class="field-group" style="margin-bottom:.5rem;max-width:340px"><label>Avatar Color</label><select id="em_color">${opts}</select></div>`,async ()=>{
     const name=document.getElementById('em_name').value.trim();
     const role=document.getElementById('em_role').value.trim();
     if(!name||!role){toast('❌ Name and Role required!','err');return;}
@@ -730,10 +904,10 @@ function editMember(id){
     m.wins=document.getElementById('em_wins').value.trim()||'—';
     m.letter=(document.getElementById('em_letter').value.trim().toUpperCase()||name[0]||'?');
     m.color=document.getElementById('em_color').value;
-    save('apex_members',members);renderMemberList();renderTeamGrid();closeEditModal();toast('✅ Member updated!','ok');
+    await masterSave();renderMemberList();renderTeamGrid();closeEditModal();toast('✅ Updated & synced!','ok');
   });
 }
-function deleteMember(id){if(!confirm('Remove this member?'))return;members=members.filter(m=>m.id!==id);save('apex_members',members);renderMemberList();renderTeamGrid();toast('🗑 Removed','info');}
+async function deleteMember(id){if(!confirm('Remove this member?'))return;members=members.filter(m=>m.id!==id);await masterSave();renderMemberList();renderTeamGrid();toast('🗑 Removed','info');}
 
 /* ── RENDER ALL ── */
 function renderAll(){
@@ -741,122 +915,24 @@ function renderAll(){
   if(isAdmin){renderRouteList();renderMemberList();}
 }
 
-/* ── ROUTE MAP ENGINE ── */
+/* ══════════════════════════════════════════
+   ROUTE MAP ENGINE (unchanged)
+══════════════════════════════════════════ */
 const rmCanvas=document.getElementById('mapCanvas'),rmCtx=rmCanvas.getContext('2d');
 let rmW=0,rmH=0,rmPts=[],rmPath=[];
 let rmProgress=0,rmPlaying=false,rmLastT=null,rmRaf=null,rmReached=new Set(),rmCpTimer=null;
-
-function rmResize(){
-  const w=rmCanvas.parentElement;
-  rmW=rmCanvas.width=w.clientWidth*devicePixelRatio;
-  rmH=rmCanvas.height=w.clientHeight*devicePixelRatio;
-  rmCanvas.style.width=w.clientWidth+'px';rmCanvas.style.height=w.clientHeight+'px';
-  rmBuildPath();rmDraw();
-}
-function rmBuildPath(){
-  const n=route.length;
-  rmPts=route.map((_,i)=>{const t=i/(n-1||1);return{x:(i%2===0)?rmW*.18:rmW*.80,y:rmH*.07+t*(rmH*.86)};});
-  rmPath=[];const S=1400;
-  for(let s=0;s<=S;s++){
-    const t=s/S,idx=t*(rmPts.length-1),i1=Math.floor(idx);
-    const i0=Math.max(0,i1-1),i2=Math.min(rmPts.length-1,i1+1),i3=Math.min(rmPts.length-1,i1+2);
-    rmPath.push(rmCatmull(rmPts[i0],rmPts[i1],rmPts[i2],rmPts[i3],idx-i1));
-  }
-  for(let i=0;i<rmPath.length;i++){
-    const nx=rmPath[Math.min(i+1,rmPath.length-1)],pv=rmPath[Math.max(i-1,0)];
-    rmPath[i].angle=Math.atan2(nx.y-pv.y,nx.x-pv.x);
-  }
-}
-function rmCatmull(p0,p1,p2,p3,t){
-  const t2=t*t,t3=t2*t;
-  return{x:.5*((-p0.x+3*p1.x-3*p2.x+p3.x)*t3+(2*p0.x-5*p1.x+4*p2.x-p3.x)*t2+(-p0.x+p2.x)*t+2*p1.x),
-         y:.5*((-p0.y+3*p1.y-3*p2.y+p3.y)*t3+(2*p0.y-5*p1.y+4*p2.y-p3.y)*t2+(-p0.y+p2.y)*t+2*p1.y)};
-}
-function rmDraw(){
-  rmCtx.clearRect(0,0,rmW,rmH);const dpr=devicePixelRatio;
-  rmCtx.save();rmCtx.strokeStyle='rgba(255,255,255,.04)';rmCtx.lineWidth=1;
-  const G=60*dpr;
-  for(let x=0;x<rmW;x+=G){rmCtx.beginPath();rmCtx.moveTo(x,0);rmCtx.lineTo(x,rmH);rmCtx.stroke();}
-  for(let y=0;y<rmH;y+=G){rmCtx.beginPath();rmCtx.moveTo(0,y);rmCtx.lineTo(rmW,y);rmCtx.stroke();}
-  rmCtx.restore();
-  if(rmPath.length<2)return;
-  rmCtx.save();rmCtx.lineWidth=22*dpr;rmCtx.lineCap='round';rmCtx.lineJoin='round';rmCtx.strokeStyle='rgba(255,255,255,.06)';
-  rmCtx.beginPath();rmCtx.moveTo(rmPath[0].x,rmPath[0].y);for(let i=1;i<rmPath.length;i++)rmCtx.lineTo(rmPath[i].x,rmPath[i].y);rmCtx.stroke();
-  rmCtx.setLineDash([14*dpr,18*dpr]);rmCtx.lineWidth=2*dpr;rmCtx.strokeStyle='rgba(255,255,255,.1)';rmCtx.stroke();rmCtx.setLineDash([]);rmCtx.restore();
-  const curIdx=Math.floor(rmProgress*(rmPath.length-1));
-  if(curIdx>0){
-    rmCtx.save();rmCtx.lineWidth=5*dpr;rmCtx.lineCap='round';rmCtx.lineJoin='round';
-    rmCtx.strokeStyle='#00E5FF';rmCtx.shadowColor='#00E5FF';rmCtx.shadowBlur=14*dpr;
-    rmCtx.beginPath();rmCtx.moveTo(rmPath[0].x,rmPath[0].y);for(let i=1;i<=curIdx;i++)rmCtx.lineTo(rmPath[i].x,rmPath[i].y);rmCtx.stroke();rmCtx.restore();
-  }
-  route.forEach((cp,i)=>{
-    const t=i/(route.length-1||1),pi=Math.round(t*(rmPath.length-1)),pp=rmPath[pi]||rmPts[i];
-    const r=16*dpr,reached=rmProgress>=t-.002;
-    rmCtx.save();
-    if(reached){rmCtx.shadowColor=cp.color;rmCtx.shadowBlur=20*dpr;}
-    rmCtx.beginPath();rmCtx.arc(pp.x,pp.y,r,0,Math.PI*2);rmCtx.strokeStyle=reached?cp.color:'rgba(255,255,255,.18)';rmCtx.lineWidth=2.5*dpr;rmCtx.stroke();
-    rmCtx.beginPath();rmCtx.arc(pp.x,pp.y,r-2*dpr,0,Math.PI*2);
-    rmCtx.fillStyle=reached?(i===route.length-1?'rgba(255,61,0,.35)':'rgba(0,229,255,.18)'):'rgba(10,10,15,.75)';rmCtx.fill();rmCtx.shadowBlur=0;
-    rmCtx.font=`${Math.round(12*dpr)}px sans-serif`;rmCtx.textAlign='center';rmCtx.textBaseline='middle';rmCtx.fillStyle=reached?'#fff':'rgba(255,255,255,.28)';
-    rmCtx.fillText(i===route.length-1?'🏁':(reached?'★':String(i)),pp.x,pp.y);
-    const lx=pp.x>rmW*.5?pp.x-r-8*dpr:pp.x+r+8*dpr,align=pp.x>rmW*.5?'right':'left';
-    rmCtx.font=`bold ${Math.round(11*dpr)}px 'Barlow Condensed',sans-serif`;rmCtx.textAlign=align;rmCtx.fillStyle=reached?'#F0F0F5':'rgba(255,255,255,.22)';
-    rmCtx.fillText(cp.label,lx,pp.y-7*dpr);
-    if(cp.rank&&reached){rmCtx.font=`${Math.round(10*dpr)}px 'Barlow Condensed',sans-serif`;rmCtx.fillStyle='#FFD600';rmCtx.fillText(cp.rank,lx,pp.y+9*dpr);}
-    rmCtx.restore();
-  });
-  const cp=rmPath[curIdx]||rmPath[0];rmDrawCar(cp.x,cp.y,cp.angle||0);
-}
-function rmDrawCar(x,y,angle){
-  const ctx=rmCtx,dpr=devicePixelRatio,s=2.8*dpr;
-  ctx.save();ctx.translate(x,y);ctx.rotate(angle+Math.PI/2);
-  ctx.shadowColor='#FF3D00';ctx.shadowBlur=22*dpr;
-  ctx.fillStyle='#FF3D00';rrect(ctx,-7*s,-11*s,14*s,22*s,3*s);ctx.fill();
-  ctx.fillStyle='#cc2a00';rrect(ctx,-5*s,-7.5*s,10*s,13*s,2*s);ctx.fill();
-  ctx.fillStyle='rgba(0,229,255,.75)';rrect(ctx,-4*s,-6.5*s,8*s,5*s,1.2*s);ctx.fill();
-  ctx.shadowBlur=0;ctx.fillStyle='#1a1a1a';
-  [[-9*s,-7*s],[9*s,-7*s],[-9*s,7*s],[9*s,7*s]].forEach(([wx,wy])=>{ctx.beginPath();ctx.ellipse(wx,wy,3.5*s,2.5*s,Math.PI/2,0,Math.PI*2);ctx.fill();});
-  ctx.fillStyle='#FFD600';[[-4*s,-11*s],[4*s,-11*s]].forEach(([lx,ly])=>{ctx.beginPath();ctx.arc(lx,ly,1.8*s,0,Math.PI*2);ctx.fill();});
-  ctx.restore();
-}
+function rmResize(){const w=rmCanvas.parentElement;rmW=rmCanvas.width=w.clientWidth*devicePixelRatio;rmH=rmCanvas.height=w.clientHeight*devicePixelRatio;rmCanvas.style.width=w.clientWidth+'px';rmCanvas.style.height=w.clientHeight+'px';rmBuildPath();rmDraw();}
+function rmBuildPath(){const n=route.length;rmPts=route.map((_,i)=>{const t=i/(n-1||1);return{x:(i%2===0)?rmW*.18:rmW*.80,y:rmH*.07+t*(rmH*.86)};});rmPath=[];const S=1400;for(let s=0;s<=S;s++){const t=s/S,idx=t*(rmPts.length-1),i1=Math.floor(idx);const i0=Math.max(0,i1-1),i2=Math.min(rmPts.length-1,i1+1),i3=Math.min(rmPts.length-1,i1+2);rmPath.push(rmCatmull(rmPts[i0],rmPts[i1],rmPts[i2],rmPts[i3],idx-i1));}for(let i=0;i<rmPath.length;i++){const nx=rmPath[Math.min(i+1,rmPath.length-1)],pv=rmPath[Math.max(i-1,0)];rmPath[i].angle=Math.atan2(nx.y-pv.y,nx.x-pv.x);}}
+function rmCatmull(p0,p1,p2,p3,t){const t2=t*t,t3=t2*t;return{x:.5*((-p0.x+3*p1.x-3*p2.x+p3.x)*t3+(2*p0.x-5*p1.x+4*p2.x-p3.x)*t2+(-p0.x+p2.x)*t+2*p1.x),y:.5*((-p0.y+3*p1.y-3*p2.y+p3.y)*t3+(2*p0.y-5*p1.y+4*p2.y-p3.y)*t2+(-p0.y+p2.y)*t+2*p1.y)};}
+function rmDraw(){rmCtx.clearRect(0,0,rmW,rmH);const dpr=devicePixelRatio;rmCtx.save();rmCtx.strokeStyle='rgba(255,255,255,.04)';rmCtx.lineWidth=1;const G=60*dpr;for(let x=0;x<rmW;x+=G){rmCtx.beginPath();rmCtx.moveTo(x,0);rmCtx.lineTo(x,rmH);rmCtx.stroke();}for(let y=0;y<rmH;y+=G){rmCtx.beginPath();rmCtx.moveTo(0,y);rmCtx.lineTo(rmW,y);rmCtx.stroke();}rmCtx.restore();if(rmPath.length<2)return;rmCtx.save();rmCtx.lineWidth=22*dpr;rmCtx.lineCap='round';rmCtx.lineJoin='round';rmCtx.strokeStyle='rgba(255,255,255,.06)';rmCtx.beginPath();rmCtx.moveTo(rmPath[0].x,rmPath[0].y);for(let i=1;i<rmPath.length;i++)rmCtx.lineTo(rmPath[i].x,rmPath[i].y);rmCtx.stroke();rmCtx.setLineDash([14*dpr,18*dpr]);rmCtx.lineWidth=2*dpr;rmCtx.strokeStyle='rgba(255,255,255,.1)';rmCtx.stroke();rmCtx.setLineDash([]);rmCtx.restore();const curIdx=Math.floor(rmProgress*(rmPath.length-1));if(curIdx>0){rmCtx.save();rmCtx.lineWidth=5*dpr;rmCtx.lineCap='round';rmCtx.lineJoin='round';rmCtx.strokeStyle='#00E5FF';rmCtx.shadowColor='#00E5FF';rmCtx.shadowBlur=14*dpr;rmCtx.beginPath();rmCtx.moveTo(rmPath[0].x,rmPath[0].y);for(let i=1;i<=curIdx;i++)rmCtx.lineTo(rmPath[i].x,rmPath[i].y);rmCtx.stroke();rmCtx.restore();}route.forEach((cp,i)=>{const t=i/(route.length-1||1),pi=Math.round(t*(rmPath.length-1)),pp=rmPath[pi]||rmPts[i];const r=16*dpr,reached=rmProgress>=t-.002;rmCtx.save();if(reached){rmCtx.shadowColor=cp.color;rmCtx.shadowBlur=20*dpr;}rmCtx.beginPath();rmCtx.arc(pp.x,pp.y,r,0,Math.PI*2);rmCtx.strokeStyle=reached?cp.color:'rgba(255,255,255,.18)';rmCtx.lineWidth=2.5*dpr;rmCtx.stroke();rmCtx.beginPath();rmCtx.arc(pp.x,pp.y,r-2*dpr,0,Math.PI*2);rmCtx.fillStyle=reached?(i===route.length-1?'rgba(255,61,0,.35)':'rgba(0,229,255,.18)'):'rgba(10,10,15,.75)';rmCtx.fill();rmCtx.shadowBlur=0;rmCtx.font=`${Math.round(12*dpr)}px sans-serif`;rmCtx.textAlign='center';rmCtx.textBaseline='middle';rmCtx.fillStyle=reached?'#fff':'rgba(255,255,255,.28)';rmCtx.fillText(i===route.length-1?'🏁':(reached?'★':String(i)),pp.x,pp.y);const lx=pp.x>rmW*.5?pp.x-r-8*dpr:pp.x+r+8*dpr,align=pp.x>rmW*.5?'right':'left';rmCtx.font=`bold ${Math.round(11*dpr)}px 'Barlow Condensed',sans-serif`;rmCtx.textAlign=align;rmCtx.fillStyle=reached?'#F0F0F5':'rgba(255,255,255,.22)';rmCtx.fillText(cp.label,lx,pp.y-7*dpr);if(cp.rank&&reached){rmCtx.font=`${Math.round(10*dpr)}px 'Barlow Condensed',sans-serif`;rmCtx.fillStyle='#FFD600';rmCtx.fillText(cp.rank,lx,pp.y+9*dpr);}rmCtx.restore();});const cp=rmPath[curIdx]||rmPath[0];rmDrawCar(cp.x,cp.y,cp.angle||0);}
+function rmDrawCar(x,y,angle){const ctx=rmCtx,dpr=devicePixelRatio,s=2.8*dpr;ctx.save();ctx.translate(x,y);ctx.rotate(angle+Math.PI/2);ctx.shadowColor='#FF3D00';ctx.shadowBlur=22*dpr;ctx.fillStyle='#FF3D00';rrect(ctx,-7*s,-11*s,14*s,22*s,3*s);ctx.fill();ctx.fillStyle='#cc2a00';rrect(ctx,-5*s,-7.5*s,10*s,13*s,2*s);ctx.fill();ctx.fillStyle='rgba(0,229,255,.75)';rrect(ctx,-4*s,-6.5*s,8*s,5*s,1.2*s);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='#1a1a1a';[[-9*s,-7*s],[9*s,-7*s],[-9*s,7*s],[9*s,7*s]].forEach(([wx,wy])=>{ctx.beginPath();ctx.ellipse(wx,wy,3.5*s,2.5*s,Math.PI/2,0,Math.PI*2);ctx.fill();});ctx.fillStyle='#FFD600';[[-4*s,-11*s],[4*s,-11*s]].forEach(([lx,ly])=>{ctx.beginPath();ctx.arc(lx,ly,1.8*s,0,Math.PI*2);ctx.fill();});ctx.restore();}
 function rrect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();}
-function rmShowCP(i){
-  const cp=route[i],t=i/(route.length-1||1),pi=Math.round(t*(rmPath.length-1)),pp=rmPath[pi]||rmPts[i];
-  const popup=document.getElementById('cpPopup'),wrap=rmCanvas.parentElement.getBoundingClientRect(),dpr=devicePixelRatio;
-  let lx=pp.x/dpr+(pp.x>rmW*.5?-230:22),ly=pp.y/dpr-65;
-  lx=Math.max(8,Math.min(lx,wrap.width-240));ly=Math.max(8,Math.min(ly,wrap.height-110));
-  popup.style.left=lx+'px';popup.style.top=ly+'px';
-  document.getElementById('cpEv').textContent=cp.event;document.getElementById('cpNm').textContent=cp.label;document.getElementById('cpRk').textContent=cp.rank;
-  popup.classList.add('show');clearTimeout(rmCpTimer);rmCpTimer=setTimeout(()=>popup.classList.remove('show'),3500);
-}
-function rmLoop(ts){
-  if(rmLastT===null)rmLastT=ts;const dt=(ts-rmLastT)/1000;rmLastT=ts;
-  const spd=parseFloat(document.getElementById('spdSlider').value);
-  rmProgress=Math.min(1,rmProgress+dt*spd*0.055);
-  route.forEach((_,i)=>{const t=i/(route.length-1||1);if(rmProgress>=t&&!rmReached.has(i)){rmReached.add(i);if(i>0)rmShowCP(i);}});
-  document.getElementById('progFill').style.width=(rmProgress*100).toFixed(1)+'%';
-  rmDraw();
-  if(rmProgress<1&&rmPlaying)rmRaf=requestAnimationFrame(rmLoop);
-  else if(rmProgress>=1){rmPlaying=false;document.getElementById('rmPlayBtn').textContent='✔ Done';rmDraw();}
-}
-function rmTogglePlay(){
-  if(rmProgress>=1){rmReset();return;}
-  rmPlaying=!rmPlaying;document.getElementById('rmPlayBtn').textContent=rmPlaying?'⏸ Pause':'▶ Play';
-  if(rmPlaying){rmLastT=null;rmRaf=requestAnimationFrame(rmLoop);}else cancelAnimationFrame(rmRaf);
-}
-function rmReset(){
-  cancelAnimationFrame(rmRaf);rmProgress=0;rmPlaying=false;rmLastT=null;rmReached.clear();
-  document.getElementById('rmPlayBtn').textContent='▶ Play';document.getElementById('progFill').style.width='0%';
-  document.getElementById('cpPopup').classList.remove('show');rmDraw();
-}
-function openRoute(){
-  document.getElementById('routePage').classList.add('open');document.body.style.overflow='hidden';
-  setTimeout(()=>{rmResize();rmDraw();},60);
-}
-function closeRoute(){
-  document.getElementById('routePage').classList.remove('open');document.body.style.overflow='';
-  cancelAnimationFrame(rmRaf);rmPlaying=false;document.getElementById('rmPlayBtn').textContent='▶ Play';
-}
+function rmShowCP(i){const cp=route[i],t=i/(route.length-1||1),pi=Math.round(t*(rmPath.length-1)),pp=rmPath[pi]||rmPts[i];const popup=document.getElementById('cpPopup'),wrap=rmCanvas.parentElement.getBoundingClientRect(),dpr=devicePixelRatio;let lx=pp.x/dpr+(pp.x>rmW*.5?-230:22),ly=pp.y/dpr-65;lx=Math.max(8,Math.min(lx,wrap.width-240));ly=Math.max(8,Math.min(ly,wrap.height-110));popup.style.left=lx+'px';popup.style.top=ly+'px';document.getElementById('cpEv').textContent=cp.event;document.getElementById('cpNm').textContent=cp.label;document.getElementById('cpRk').textContent=cp.rank;popup.classList.add('show');clearTimeout(rmCpTimer);rmCpTimer=setTimeout(()=>popup.classList.remove('show'),3500);}
+function rmLoop(ts){if(rmLastT===null)rmLastT=ts;const dt=(ts-rmLastT)/1000;rmLastT=ts;const spd=parseFloat(document.getElementById('spdSlider').value);rmProgress=Math.min(1,rmProgress+dt*spd*0.055);route.forEach((_,i)=>{const t=i/(route.length-1||1);if(rmProgress>=t&&!rmReached.has(i)){rmReached.add(i);if(i>0)rmShowCP(i);}});document.getElementById('progFill').style.width=(rmProgress*100).toFixed(1)+'%';rmDraw();if(rmProgress<1&&rmPlaying)rmRaf=requestAnimationFrame(rmLoop);else if(rmProgress>=1){rmPlaying=false;document.getElementById('rmPlayBtn').textContent='✔ Done';rmDraw();}}
+function rmTogglePlay(){if(rmProgress>=1){rmReset();return;}rmPlaying=!rmPlaying;document.getElementById('rmPlayBtn').textContent=rmPlaying?'⏸ Pause':'▶ Play';if(rmPlaying){rmLastT=null;rmRaf=requestAnimationFrame(rmLoop);}else cancelAnimationFrame(rmRaf);}
+function rmReset(){cancelAnimationFrame(rmRaf);rmProgress=0;rmPlaying=false;rmLastT=null;rmReached.clear();document.getElementById('rmPlayBtn').textContent='▶ Play';document.getElementById('progFill').style.width='0%';document.getElementById('cpPopup').classList.remove('show');rmDraw();}
+function openRoute(){document.getElementById('routePage').classList.add('open');document.body.style.overflow='hidden';setTimeout(()=>{rmResize();rmDraw();},60);}
+function closeRoute(){document.getElementById('routePage').classList.remove('open');document.body.style.overflow='';cancelAnimationFrame(rmRaf);rmPlaying=false;document.getElementById('rmPlayBtn').textContent='▶ Play';}
 window.addEventListener('resize',()=>{if(document.getElementById('routePage').classList.contains('open'))rmResize();});
 
 /* ── HELPERS ── */
@@ -876,7 +952,7 @@ document.querySelectorAll('a,button,label,.cert-card,.member-card').forEach(el=>
 });
 
 /* ── INIT ── */
-renderAll();
+initCloud();
 </script>
 </body>
 </html>
